@@ -9,7 +9,9 @@
   "author": "timmyreilly",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.15.4",
+    "dotenv": "^4.0.0",
+    "express": "^4.9.8",
+    "redis": "^2.8.0",
     "request": "^2.81.0",
     "socket.io": "^2.0.3"
   }
