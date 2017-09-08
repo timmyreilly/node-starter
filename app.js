@@ -7,11 +7,13 @@ var server = require('http').createServer(app);
 var socket = require('socket.io');
 var io = socket.listen(server);
 var redis = require('redis');
+var logger = require('./logger'); 
 require("dotenv").config();
 
 
 var app = express();
-
+app.use(logger); 
+app.use(express.static('public')); 
 
 // var client = redis.createClient(6379,'timIsRed.redis.cache.windows.net');
 // timIsRed.redis.cache.windows.net:6380,password=3kFtG0Dz+oHtmaUHn2pk916qihO3fbKlinGNvB7z9Xk=,ssl=True,abortConnect=False
@@ -60,10 +62,22 @@ client.lrange('questions', 0, -1, function (error, messages) {
     console.log(messages);
 });
 
-app.get('/', function (req, res) {
+app.get('/searchURL', function (req, res) {
     request(searchURL).pipe(res);
 });
 
+app.get('/', function(request, response){
+
+})
+
+app.get('/redirect', function(request,response){
+    response.redirect(301, '/blocks'); 
+}); 
+
+app.get('/blocks', function(request, response){
+    var blocks = ['Fixed', 'Movable', 'Rotating'];
+    response.json(blocks); 
+}); 
 
 
 
