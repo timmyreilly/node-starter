@@ -129,7 +129,33 @@ app.post('/blocks', parseUrlencoded, function(request, response){
     response.status(201).json(newBlock.name); 
 });
 
+app.delete('/blocks/:name', function(request, response){
+    delete blocks[request.blockName];
+    response.sendStatus(200); 
 
+}); 
+
+var blocksRoute = app.route('blocks'); 
+blocksRoute.get(function(request, response){
+
+});
+
+app.route('/blocks')
+.get(function(request, response){
+    response.send("Hello lad"); 
+})
+.post(parseUrlencoded, function(request, response){
+    // do some data intake 
+    response.statusCode(200); 
+}); 
+
+app.route('/blocks/:name')
+.get(function(request, response){
+
+})
+.delete(function(request, response){
+
+});
 
 io.sockets.on('connection', function (client) {
     client.on('answer', function (question, answer) {
