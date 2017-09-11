@@ -7,13 +7,15 @@ var server = require('http').createServer(app);
 var socket = require('socket.io');
 var io = socket.listen(server);
 var redis = require('redis');
-var logger = require('./logger'); 
+var logger = require('./logger');
+var bodyParser = require('body-parser'); 
+var parseUrlencoded = bodyParser.urlencoded({ extended : false }); 
 require("dotenv").config();
 
 
 var app = express();
-app.use(logger); 
-app.use(express.static('public')); 
+app.use(logger);
+app.use(express.static('public'));
 
 // var client = redis.createClient(6379,'timIsRed.redis.cache.windows.net');
 // timIsRed.redis.cache.windows.net:6380,password=3kFtG0Dz+oHtmaUHn2pk916qihO3fbKlinGNvB7z9Xk=,ssl=True,abortConnect=False
@@ -27,13 +29,13 @@ app.use(express.static('public'));
 
 process.env.REDIS_SERVER_HOST
 
-var client = redis.createClient(6380, 'timIsRed.redis.cache.windows.net', 
+var client = redis.createClient(6380, 'timIsRed.redis.cache.windows.net',
     {
-        auth_pass : process.env.AUTH_PASS,
-        tls : {servername : 'timIsRed.redis.cache.windows.net'}
+        auth_pass: process.env.AUTH_PASS,
+        tls: { servername: 'timIsRed.redis.cache.windows.net' }
     }
-     
-); 
+
+);
 
 var options = {
     protocol: "http:",
@@ -66,38 +68,86 @@ app.get('/searchURL', function (req, res) {
     request(searchURL).pipe(res);
 });
 
-app.get('/', function(request, response){
+app.get('/', function (request, response) {
 
 })
 
-app.get('/redirect', function(request,response){
-    response.redirect(301, '/blocks'); 
-}); 
-
-app.get('/blocks', function(request, response){
-    var blocks = ['Fixed', 'Movable', 'Rotating'];
-    response.json(blocks); 
-}); 
-
-
-
-io.sockets.on('connection', function(client) {
-  client.on('answer', function(question, answer) {
-    client.broadcast.emit('answer', question, answer);
-  });
-
-  client.on('question', function(question) {
-    if(!client.question_asked) {
-      client.question_asked = true;
-      client.broadcast.emit('question', question);
-      // add the question to the list here
-      redisClient.lpush('questions', question); 
-    }
-  });
+app.get('/redirect', function (request, response) {
+    response.redirect(301, '/blocks');
 });
- 
+
+app.get('/blocks', function (request, response) {
+    response.json(Object.keys(blocks));
+});
+
+var blocks = {
+    'Fixed': 'Fastened securely in position',
+    'Movable': 'Capable of being moved',
+    'Rotating': 'Constantly in motion'
+}
+
+var locations = {
+    'Fixed': 'First Floor', 
+    'Movable': 'Second Floor',
+    'Rotating': 'Third Floor'
+}
+
+// param - intercept parameters from request 
+app.param('name', function(request, response, next){
+    var name = request.params.name;
+    var block = name[0].toUpperCase() + name.slice(1).toLowerCase(); 
+
+    request.blockName = block; 
+
+    next(); 
+});
+
+// Dynamic Routes! 
+// $ curl -i http://localhost:3001/blocks/Movable 
+app.get('/blocks/:name', function (request, response) {
+    var description = blocks[request.blockName];
+    if (!description) {
+       response.status(404).json('No description found for: ' + request.params.name); 
+    } else {
+        response.json(description);
+    }
+});
+
+app.get('/locations/:name', function(request, response){
+    var location = blocks[request.blockName]; 
+    if(!location){
+        response.status(404).json('No location found for: ' + request.params.name);
+    }else{
+        response.json(location); 
+    }
+});
+
+app.post('/blocks', parseUrlencoded, function(request, response){
+    var newBlock = request.body; 
+    blocks[newBlock.name] = newBlock.description;
+
+    response.status(201).json(newBlock.name); 
+});
 
 
-app.listen(3001, function(){
-    console.log("Listening on Port 3001"); 
+
+io.sockets.on('connection', function (client) {
+    client.on('answer', function (question, answer) {
+        client.broadcast.emit('answer', question, answer);
+    });
+
+    client.on('question', function (question) {
+        if (!client.question_asked) {
+            client.question_asked = true;
+            client.broadcast.emit('question', question);
+            // add the question to the list here
+            redisClient.lpush('questions', question);
+        }
+    });
+});
+
+
+
+app.listen(3001, function () {
+    console.log("Listening on Port 3001");
 }); 
